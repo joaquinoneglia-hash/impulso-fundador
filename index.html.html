@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impulso Fundador — Content Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ══ TOKENS ══ */
+    :root {
+      --red: #e42c2b; --black: #0a0a0a; --white: #f5f5f5; --sg: #1a1a1a;
+      --bg: #0c0c0c; --panel: #131313; --border: #222; --hover: #1c1c1c;
+      --text: #c0c0c0; --muted: #555; --input-bg: #181818;
+      --green: #22c55e; --yellow: #f59e0b;
+      --ft: 'Inter', sans-serif; --fh: 'Space Grotesk', sans-serif; --fm: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--ft); font-size: 13px; }
+
+    /* ══ NAV ══ */
+    #nav {
+      height: 50px; background: var(--panel); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px; gap: 0; flex-shrink: 0; z-index: 50;
+    }
+    .nav-logo { font-family: var(--fh); font-size: 15px; font-weight: 800; color: var(--red); margin-right: 24px; flex-shrink: 0; }
+    .nav-tabs { display: flex; gap: 2px; flex: 1; }
+    .nav-tab {
+      padding: 7px 16px; border-radius: 4px; border: none; background: transparent;
+      color: var(--muted); font-family: var(--ft); font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-tab:hover { background: var(--hover); color: var(--text); }
+    .nav-tab.active { background: var(--hover); color: var(--white); }
+    .nav-tab .tab-badge {
+      background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+      padding: 1px 5px; border-radius: 10px; font-family: var(--fm);
+    }
+    .nav-tab.disabled { opacity: .35; cursor: default; pointer-events: none; }
+    .nav-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .btn-icon {
+      background: transparent; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--muted); padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .15s;
+    }
+    .btn-icon:hover { color: var(--text); border-color: #333; background: var(--hover); }
+
+    /* ══ LAYOUT ══ */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+    #main { flex: 1; overflow: hidden; position: relative; }
+    .section { position: absolute; inset: 0; display: none; flex-direction: column; }
+    .section.active { display: flex; }
+
+    /* ══ SECTION A — IDEA ══ */
+    #section-idea { flex-direction: row; overflow: hidden; }
+
+    /* Chat panel */
+    #chat-wrap {
+      width: 340px; flex-shrink: 0; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; background: var(--panel);
+    }
+    .chat-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      font-family: var(--fh); font-size: 13px; font-weight: 700; color: var(--white);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .chat-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
+    #chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 88%; display: flex; flex-direction: column; gap: 4px; }
+    .msg.assistant { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+    .msg-bubble {
+      padding: 10px 13px; border-radius: 8px; font-size: 13px; line-height: 1.55;
+    }
+    .msg.assistant .msg-bubble { background: var(--hover); color: var(--text); border-radius: 2px 8px 8px 8px; }
+    .msg.user .msg-bubble { background: var(--red); color: #fff; border-radius: 8px 2px 8px 8px; }
+    .msg-time { font-size: 10px; color: var(--muted); padding: 0 4px; }
+    .msg.user .msg-time { text-align: right; }
+
+    .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 10px 13px; }
+    .typing-dot { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bounce .8s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: .15s; }
+    .typing-dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+    #chat-input-wrap {
+      padding: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+    }
+    #chat-input {
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--white); font-family: var(--ft); font-size: 12px; padding: 9px 12px;
+      resize: none; outline: none; line-height: 1.5; transition: border-color .15s; width: 100%;
+    }
+    #chat-input:focus { border-color: var(--red); }
+    #chat-input::placeholder { color: var(--muted); }
+    .chat-input-actions { display: flex; gap: 6px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 4px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-family: var(--ft); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .btn:hover { background: var(--hover); border-color: #333; }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn-primary { background: var(--red); border-color: var(--red); color: #fff; flex: 1; justify-content: center; }
+    .btn-primary:hover { background: #c82120; border-color: #c82120; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-green { background: rgba(34,197,94,.1); border-color: var(--green); color: var(--green); }
+    .btn-green:hover { background: rgba(34,197,94,.2); }
+    .btn-danger { background: rgba(228,44,43,.1); border-color: var(--red); color: var(--red); }
+    .btn-danger:hover { background: rgba(228,44,43,.2); }
+
+    /* Pillars panel */
+    #pillars-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    #pillars-header {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .pillars-title { font-family: var(--fh); font-size: 14px; font-weight: 700; color: var(--white); }
+    .pillars-actions { display: flex; gap: 8px; }
+    #pillars-grid {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; align-content: start;
+    }
+    #pillars-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; color: var(--muted);
+    }
+    #pillars-empty .empty-icon { font-size: 40px; }
+    #pillars-empty p { font-size: 13px; text-align: center; max-width: 280px; line-height: 1.6; }
+
+    .pillar-card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      display: flex; flex-direction: column; overflow: hidden; transition: border-color .15s;
+    }
+    .pillar-card:hover { border-color: #333; }
+    .pillar-header {
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+      background: var(--hover);
+    }
+    .pillar-num { font-family: var(--fm); font-size: 10px; color: var(--red); margin-bottom: 3px; }
+    .pillar-name { font-family: var(--fh); font-size: 13px; font-weight: 700; color: var(--white); line-height: 1.3; }
+    .pillar-desc { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .pillar-topics { display: flex; flex-direction: column; flex: 1; }
+    .topic-row {
+      padding: 9px 14px; border-bottom: 1px solid #1a1a1a; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; transition: background .12s;
+    }
+    .topic-row:last-child { border-bottom: none; }
+    .topic-row:hover { background: var(--hover); }
+    .topic-status { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+    .status-pending { background: #222; border: 1px solid #333; }
+    .status-approved { background: rgba(34,197,94,.15); border: 1px solid var(--green); color: var(--green); }
+    .status-rejected { background: rgba(228,44,43,.15); border: 1px solid var(--red); color: var(--red); }
+    .topic-title { font-size: 11px; color: var(--text); line-height: 1.35; flex: 1; }
+    .topic-row:hover .topic-title { color: var(--white); }
+    .pillar-footer { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+
+    /* Loading skeleton */
+    .skeleton { background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ══ TOPIC MODAL ══ */
+    #modal-topic {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    #modal-topic.open { display: flex; }
+    .modal-box {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      width: 620px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0;
+    }
+    .modal-title { font-family: var(--fh); font-size: 15px; font-weight: 700; color: var(--white); line-height: 1.3; }
+    .modal-pillar-tag { font-family: var(--fm); font-size: 10px; color: var(--red); text-transform: uppercase; letter-spacing: .08em; }
+    .modal-close { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+    .modal-close:hover { color: var(--white); border-color: #333; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .script-section { display: flex; flex-direction: column; gap: 6px; }
+    .script-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .script-label .icon { font-size: 13px; }
+    .script-label.hook { color: #f59e0b; }
+    .script-label.problem { color: #ef4444; }
+    .script-label.value { color: #22c55e; }
+    .script-label.cta { color: var(--red); }
+    .script-label.format { color: #a78bfa; }
+    .script-field {
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px;
+      color: var(--white); font-family: var(--ft); font-size: 12px; padding: 8px 11px;
+      outline: none; width: 100%; resize: vertical; line-height: 1.5; transition: border-color .15s;
+    }
+    .script-field:focus { border-color: var(--red); }
+    .value-items { display: flex; flex-direction: column; gap: 6px; }
+    .value-item-row { display: flex; gap: 6px; align-items: center; }
+    .value-item-row input {
+      flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px;
+      color: var(--white); font-family: var(--ft); font-size: 12px; padding: 7px 10px; outline: none; transition: border-color .15s;
+    }
+    .value-item-row input:focus { border-color: var(--red); }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* ══ API KEY MODAL ══ */
+    #modal-apikey { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 300; align-items: center; justify-content: center; }
+    #modal-apikey.open { display: flex; }
+    .apikey-box { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; width: 420px; padding: 28px; }
+    .apikey-title { font-family: var(--fh); font-size: 18px; font-weight: 800; color: var(--white); margin-bottom: 6px; }
+    .apikey-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .apikey-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--white); font-family: var(--fm); font-size: 12px; padding: 10px 12px; outline: none; margin-bottom: 12px; transition: border-color .15s; }
+    .apikey-input:focus { border-color: var(--red); }
+    .apikey-note { font-size: 11px; color: #333; margin-top: 10px; }
+    .apikey-note a { color: var(--muted); }
+
+    /* ══ SECTION B — DESARROLLO ══ */
+    #section-desarrollo { flex-direction: row; overflow: hidden; }
+
+    /* Dashboard sidebar */
+    #dash-sidebar {
+      width: 260px; flex-shrink: 0; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; background: var(--panel);
+    }
+    .dash-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      font-family: var(--fh); font-size: 13px; font-weight: 700; color: var(--white);
+    }
+    #dash-list { flex: 1; overflow-y: auto; }
+    .dash-group { }
+    .dash-group-label {
+      padding: 10px 16px 6px; font-size: 10px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); display: flex; align-items: center; justify-content: space-between;
+    }
+    .dash-count { font-family: var(--fm); font-size: 10px; color: #333; }
+    .dash-item {
+      padding: 9px 14px; display: flex; align-items: center; gap: 8px;
+      cursor: pointer; transition: background .12s; border-left: 3px solid transparent;
+    }
+    .dash-item:hover { background: var(--hover); }
+    .dash-item.active { background: rgba(228,44,43,.07); border-left-color: var(--red); }
+    .dash-item-icon { font-size: 14px; flex-shrink: 0; }
+    .dash-item-title { font-size: 11px; color: var(--text); line-height: 1.3; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-item:hover .dash-item-title { color: var(--white); }
+    .dash-item-actions { display: flex; gap: 3px; flex-shrink: 0; }
+    .dash-action-btn {
+      width: 22px; height: 22px; border-radius: 3px; border: none; background: transparent;
+      cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
+      transition: all .12s; opacity: 0;
+    }
+    .dash-item:hover .dash-action-btn { opacity: 1; }
+    .dash-item.active .dash-action-btn { opacity: 1; }
+    .dab-approve { color: var(--green); }
+    .dab-approve:hover { background: rgba(34,197,94,.15); }
+    .dab-reject { color: var(--red); }
+    .dab-reject:hover { background: rgba(228,44,43,.15); }
+    .dab-regen { color: #a78bfa; }
+    .dab-regen:hover { background: rgba(167,139,250,.15); }
+    .item-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-pending { background: #333; }
+    .dot-approved { background: var(--green); }
+    .dot-rejected { background: var(--red); }
+
+    /* Desarrollo main */
+    #dash-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    #dash-main-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; color: var(--muted);
+    }
+    #dash-main-empty .empty-icon { font-size: 36px; }
+
+    /* Carousel editor (inside Desarrollo) */
+    #carousel-editor-wrap { flex: 1; display: flex; overflow: hidden; }
+    #ce-slides-list {
+      width: 190px; flex-shrink: 0; border-right: 1px solid var(--border);
+      background: var(--panel); overflow-y: auto; padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ce-slide-header {
+      padding: 10px 12px 8px; font-size: 10px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 4px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #ce-preview { flex: 1; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+    .ce-preview-wrap { position: relative; }
+    #ce-preview-container { width: 486px; height: 607px; overflow: hidden; border: 1px solid #1e1e1e; position: relative; }
+    #ce-preview-inner { width: 1080px; height: 1350px; position: absolute; top: 0; left: 0; transform: scale(0.45); transform-origin: top left; }
+    .ce-preview-dim { position: absolute; bottom: -26px; left: 0; right: 0; text-align: center; font-family: var(--fm); font-size: 10px; color: #2a2a2a; }
+    #ce-edit { width: 270px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Thumbnail */
+    .thumb-item { position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 3px; transition: border-color .15s; overflow: visible; }
+    .thumb-item:hover { border-color: #333; }
+    .thumb-item.active { border-color: var(--red); }
+    .thumb-frame { width: 162px; height: 202px; overflow: hidden; border-radius: 2px; position: relative; background: var(--black); }
+    .thumb-inner { width: 1080px; height: 1350px; position: absolute; top: 0; left: 0; transform: scale(0.15); transform-origin: top left; pointer-events: none; }
+    .thumb-label { font-size: 10px; color: var(--muted); text-align: center; padding: 3px 0; }
+    .thumb-controls { position: absolute; top: 3px; right: -26px; display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity .12s; }
+    .thumb-item:hover .thumb-controls, .thumb-item.active .thumb-controls { opacity: 1; }
+    .thumb-btn { width: 20px; height: 20px; background: var(--panel); border: 1px solid var(--border); border-radius: 3px; color: var(--muted); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; }
+    .thumb-btn:hover { background: var(--hover); color: var(--white); }
+    .thumb-btn.danger:hover { background: #3a1010; color: var(--red); border-color: var(--red); }
+
+    /* Edit panel fields */
+    .ep-section-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 500; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .field label .hint { font-size: 10px; color: #2e2e2e; font-weight: 400; }
+    .field input[type="text"], .field textarea, .field select { background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--white); font-family: var(--ft); font-size: 12px; padding: 6px 9px; outline: none; width: 100%; resize: vertical; transition: border-color .15s; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--red); }
+    .field select option { background: #1a1a1a; }
+    .hl-preview { font-family: var(--fm); font-size: 10px; color: var(--red); padding: 3px 7px; background: rgba(228,44,43,.08); border-radius: 3px; border: 1px solid rgba(228,44,43,.2); }
+    .bullets-container { display: flex; flex-direction: column; gap: 5px; }
+    .bullet-row { display: flex; gap: 5px; align-items: center; }
+    .bullet-row input { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--white); font-family: var(--ft); font-size: 11px; padding: 5px 8px; outline: none; }
+    .bullet-row input:focus { border-color: var(--red); }
+    .bullet-num { font-family: var(--fm); font-size: 10px; color: var(--red); width: 18px; text-align: right; flex-shrink: 0; }
+    .btn-rm-bullet { width: 20px; height: 20px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--muted); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .12s; }
+    .btn-rm-bullet:hover { background: #3a1010; color: var(--red); border-color: var(--red); }
+    .btn-add-bullet { background: transparent; border: 1px dashed var(--border); border-radius: 4px; color: var(--muted); font-size: 11px; padding: 5px; cursor: pointer; width: 100%; transition: all .15s; }
+    .btn-add-bullet:hover { border-color: var(--red); color: var(--red); background: rgba(228,44,43,.05); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-label { font-size: 11px; color: var(--muted); }
+    .toggle { position: relative; width: 30px; height: 17px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; inset: 0; background: #222; border-radius: 17px; cursor: pointer; transition: background .2s; border: 1px solid var(--border); }
+    .toggle input:checked + .toggle-track { background: var(--red); border-color: var(--red); }
+    .toggle-track::after { content:''; position: absolute; left: 2px; top: 2px; width: 11px; height: 11px; background: #fff; border-radius: 50%; transition: transform .2s; }
+    .toggle input:checked + .toggle-track::after { transform: translateX(13px); }
+
+    /* Add slide type picker */
+    #type-picker { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 150; align-items: center; justify-content: center; }
+    #type-picker.open { display: flex; }
+    .type-picker-inner { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 20px; width: 340px; }
+    .type-picker-title { font-family: var(--fh); font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 14px; }
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .type-opt { background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; padding: 11px 13px; cursor: pointer; transition: all .15s; }
+    .type-opt:hover { border-color: var(--red); background: rgba(228,44,43,.05); }
+    .type-opt-name { font-family: var(--fh); font-size: 12px; font-weight: 700; color: var(--white); }
+    .type-opt-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .type-picker-cancel { margin-top: 10px; width: 100%; background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 7px; color: var(--muted); cursor: pointer; font-size: 11px; transition: all .15s; }
+    .type-picker-cancel:hover { color: var(--white); }
+
+    /* Video script viewer */
+    #video-viewer { flex: 1; overflow-y: auto; padding: 28px; max-width: 700px; margin: 0 auto; width: 100%; }
+    .video-viewer-header { margin-bottom: 24px; }
+    .video-viewer-pillar { font-family: var(--fm); font-size: 11px; color: var(--red); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .08em; }
+    .video-viewer-title { font-family: var(--fh); font-size: 22px; font-weight: 800; color: var(--white); line-height: 1.2; }
+    .vs-grid { display: flex; flex-direction: column; gap: 14px; }
+    .vs-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; }
+    .vs-card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .vs-card-label.l-hook { color: #f59e0b; }
+    .vs-card-label.l-problem { color: #ef4444; }
+    .vs-card-label.l-value { color: #22c55e; }
+    .vs-card-label.l-cta { color: var(--red); }
+    .vs-card-label.l-format { color: #a78bfa; }
+    .vs-card-field { background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--white); font-family: var(--ft); font-size: 13px; padding: 9px 12px; width: 100%; outline: none; resize: vertical; line-height: 1.55; transition: border-color .15s; }
+    .vs-card-field:focus { border-color: var(--red); }
+    .vs-value-list { display: flex; flex-direction: column; gap: 7px; }
+    .vs-value-row { display: flex; gap: 8px; align-items: flex-start; }
+    .vs-value-dot { width: 8px; height: 8px; background: var(--green); border-radius: 2px; flex-shrink: 0; margin-top: 8px; }
+    .vs-value-row textarea { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--white); font-family: var(--ft); font-size: 12px; padding: 7px 10px; outline: none; resize: none; transition: border-color .15s; }
+    .vs-value-row textarea:focus { border-color: var(--red); }
+    .vs-actions { margin-top: 20px; display: flex; gap: 8px; }
+
+    /* Sections C/D placeholder */
+    .placeholder-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .placeholder-title { font-family: var(--fh); font-size: 22px; font-weight: 800; color: #2a2a2a; }
+    .placeholder-tag { font-family: var(--fm); font-size: 11px; color: #333; }
+
+    /* ══ SLIDE DESIGN CSS ══ */
+    .slide-inner { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #f5f5f5; }
+    .slide-inner .bg-dots { position: absolute; inset: 0; background-image: radial-gradient(circle, #1e1e1e 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; opacity: .6; }
+    .slide-inner .bg-glow { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(228,44,43,.14) 0%, transparent 70%); pointer-events: none; }
+    .slide-inner .footer-line { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: #e42c2b; }
+    .slide-inner .brand-tag { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #e42c2b; letter-spacing: .04em; text-transform: uppercase; }
+    .slide-inner .slide-num { font-family: 'JetBrains Mono', monospace; font-size: 26px; color: #2e2e2e; }
+    .slide-inner .top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
+    .slide-inner .tag-line { font-family: 'JetBrains Mono', monospace; font-size: 26px; letter-spacing: .12em; color: #e42c2b; text-transform: uppercase; }
+    .slide-inner .title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; line-height: 1.05; color: #f5f5f5; }
+    .slide-inner .red { color: #e42c2b; }
+    .slide-inner .body-text { font-family: 'Inter', sans-serif; font-size: 40px; font-weight: 400; color: #aaa; line-height: 1.65; }
+    .slide-inner .body-text strong { color: #f5f5f5; font-weight: 600; }
+    .slide-inner .stat-block { background: #1a1a1a; border-left: 8px solid #e42c2b; padding: 52px 60px; border-radius: 4px; }
+    .slide-inner .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 130px; font-weight: 800; color: #e42c2b; line-height: 1; }
+    .slide-inner .stat-label { font-family: 'Inter', sans-serif; font-size: 36px; color: #666; margin-top: 10px; }
+    .slide-inner .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 44px; }
+    .slide-inner .bullet-list li { font-family: 'Inter', sans-serif; font-size: 40px; color: #f5f5f5; display: flex; align-items: flex-start; gap: 28px; line-height: 1.45; }
+    .slide-inner .bullet-list:not(.numbered) li::before { content: ''; display: block; min-width: 14px; height: 14px; background: #e42c2b; margin-top: 14px; border-radius: 2px; flex-shrink: 0; }
+    .slide-inner .bullet-list li .num { font-family: 'JetBrains Mono', monospace; font-size: 34px; color: #e42c2b; min-width: 60px; flex-shrink: 0; margin-top: 4px; }
+    .slide-inner .quote-wrap { border-top: 4px solid #e42c2b; padding-top: 60px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .slide-inner .quote-text { font-family: 'Space Grotesk', sans-serif; font-size: 76px; font-weight: 700; line-height: 1.2; color: #f5f5f5; }
+    .slide-inner .quote-text em { color: #e42c2b; font-style: normal; }
+    .slide-inner .cta-btn { display: inline-flex; align-items: center; background: #e42c2b; color: #f5f5f5; font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 700; padding: 40px 68px; border-radius: 4px; width: fit-content; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #252525; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+    /* Regen spinner */
+    .spin { animation: spinning .7s linear infinite; display: inline-block; }
+    @keyframes spinning { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="nav-logo">Impulso Fundador</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="setSection('idea')" id="tab-idea">💡 Idea</button>
+      <button class="nav-tab" onclick="setSection('desarrollo')" id="tab-desarrollo">🛠 Desarrollo <span class="tab-badge" id="badge-desarrollo" style="display:none">0</span></button>
+      <button class="nav-tab disabled" id="tab-planificacion">📅 Planificación</button>
+      <button class="nav-tab disabled" id="tab-programacion">🚀 Programación</button>
+    </div>
+    <div class="nav-right">
+      <button class="btn-icon" onclick="openApiKey()">⚙ API Key</button>
+      <button class="btn-icon" onclick="clearAll()" title="Reiniciar todo">↺ Reset</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- ═════════════════════════════════
+         SECTION A — IDEA
+    ═════════════════════════════════ -->
+    <section id="section-idea" class="section active">
+
+      <!-- Chat -->
+      <div id="chat-wrap">
+        <div class="chat-header"><div class="chat-dot"></div> Chat de Ideas</div>
+        <div id="chat-messages"></div>
+        <div id="chat-input-wrap">
+          <textarea id="chat-input" rows="3" placeholder="Contame tus ideas de contenido para este mes..."></textarea>
+          <div class="chat-input-actions">
+            <button class="btn" onclick="clearChat()" style="flex-shrink:0">↺</button>
+            <button class="btn btn-primary" id="btn-generate" onclick="handleGenerate()">✦ Generar pilares</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pillars -->
+      <div id="pillars-wrap">
+        <div id="pillars-header">
+          <div class="pillars-title" id="pillars-title">Pilares de contenido</div>
+          <div class="pillars-actions" id="pillars-actions" style="display:none">
+            <button class="btn btn-sm" onclick="approveAll()">✓ Aprobar todos</button>
+            <button class="btn btn-sm btn-primary" onclick="sendToDesarrollo()" id="btn-send">↗ Enviar a Desarrollo</button>
+          </div>
+        </div>
+        <div id="pillars-grid"></div>
+        <div id="pillars-empty">
+          <div class="empty-icon">💡</div>
+          <p>Contale al chat tus ideas y generá 5 pilares de contenido con 25 temas listos para el mes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════
+         SECTION B — DESARROLLO
+    ═════════════════════════════════ -->
+    <section id="section-desarrollo" class="section">
+
+      <!-- Dashboard sidebar -->
+      <div id="dash-sidebar">
+        <div class="dash-header">Dashboard de Contenidos</div>
+        <div id="dash-list"></div>
+      </div>
+
+      <!-- Main editor area -->
+      <div id="dash-main">
+        <div id="dash-main-empty">
+          <div class="empty-icon">🛠</div>
+          <p style="font-size:12px; color:var(--muted)">Seleccioná un contenido del dashboard</p>
+        </div>
+
+        <!-- Carousel editor (hidden until selected) -->
+        <div id="carousel-editor-wrap" style="display:none">
+          <div id="ce-slides-list">
+            <div class="ce-slide-header">
+              <span>Slides</span>
+              <button class="btn-icon" style="padding:3px 7px; font-size:11px" onclick="openTypePicker()">+</button>
+            </div>
+          </div>
+          <div id="ce-preview">
+            <div class="ce-preview-wrap">
+              <div id="ce-preview-container">
+                <div id="ce-preview-inner" class="slide-inner"></div>
+              </div>
+              <div class="ce-preview-dim">1080 × 1350 px</div>
+            </div>
+          </div>
+          <div id="ce-edit"></div>
+        </div>
+
+        <!-- Video script viewer (hidden until selected) -->
+        <div id="video-viewer" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════
+         SECTION C — PLANIFICACIÓN
+    ═════════════════════════════════ -->
+    <section id="section-planificacion" class="section">
+      <div class="placeholder-section">
+        <div class="placeholder-title">Planificación</div>
+        <div class="placeholder-tag">Próximamente — Calendario editorial</div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════
+         SECTION D — PROGRAMACIÓN
+    ═════════════════════════════════ -->
+    <section id="section-programacion" class="section">
+      <div class="placeholder-section">
+        <div class="placeholder-title">Programación</div>
+        <div class="placeholder-tag">Próximamente — Publicación automática</div>
+      </div>
+    </section>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div id="modal-topic" onclick="closeTopicModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-pillar-tag" id="modal-pillar-tag"></div>
+        <div class="modal-title" id="modal-topic-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeTopicModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="rejectTopic(currentTopicId)">✗ Rechazar</button>
+      <button class="btn btn-sm" onclick="regenerateTopic(currentTopicId)" style="margin-left:auto">↺ Regenerar</button>
+      <button class="btn btn-green" onclick="approveTopic(currentTopicId)">✓ Aprobar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-apikey" onclick="closeApiKey(event)">
+  <div class="apikey-box" onclick="event.stopPropagation()">
+    <div class="apikey-title">API Key de Anthropic</div>
+    <div class="apikey-sub">Necesitás una API Key de Anthropic para generar contenido con IA. Se guarda en tu navegador, no se envía a ningún servidor.</div>
+    <input class="apikey-input" type="password" id="apikey-input" placeholder="sk-ant-..." />
+    <button class="btn btn-primary" style="width:100%; justify-content:center" onclick="saveApiKey()">Guardar y continuar</button>
+    <div class="apikey-note">Conseguí tu key en console.anthropic.com</div>
+  </div>
+</div>
+
+<div id="type-picker" onclick="closeTypePicker(event)">
+  <div class="type-picker-inner" onclick="event.stopPropagation()">
+    <div class="type-picker-title">¿Tipo de slide?</div>
+    <div class="type-grid">
+      <div class="type-opt" onclick="addSlide('cover')"><div class="type-opt-name">Portada</div><div class="type-opt-desc">Título grande + subtítulo</div></div>
+      <div class="type-opt" onclick="addSlide('stat')"><div class="type-opt-name">Estadística</div><div class="type-opt-desc">Número destacado</div></div>
+      <div class="type-opt" onclick="addSlide('list')"><div class="type-opt-name">Lista</div><div class="type-opt-desc">Bullets o numerados</div></div>
+      <div class="type-opt" onclick="addSlide('content')"><div class="type-opt-name">Contenido</div><div class="type-opt-desc">Título + párrafo</div></div>
+      <div class="type-opt" onclick="addSlide('quote')"><div class="type-opt-name">Quote</div><div class="type-opt-desc">Frase de impacto</div></div>
+      <div class="type-opt" onclick="addSlide('cta')"><div class="type-opt-name">CTA</div><div class="type-opt-desc">Llamada a acción</div></div>
+    </div>
+    <button class="type-picker-cancel" onclick="closeTypePicker()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONSTANTS & UTILITIES
+══════════════════════════════════════════════════════════════ */
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+const nl2br = s => esc(s ?? '').replace(/\n/g,'<br>')
+const genId = () => Math.random().toString(36).substr(2,9)
+const now = () => new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'})
+
+function applyHL(text, hl, tag='span class="red"', ct='span') {
+  const base = nl2br(text)
+  if (!hl?.trim()) return base
+  const rx = hl.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+  return base.replace(new RegExp(rx,'g'), `<${tag}>${esc(hl.trim())}</${ct}>`)
+}
+
+function extractJSON(text) {
+  const m = text.match(/```(?:json)?\n?([\s\S]*?)```/)
+  try { return JSON.parse(m ? m[1] : text) } catch(e) {
+    // Try to find JSON object in text
+    const start = text.indexOf('{'), end = text.lastIndexOf('}')
+    if (start !== -1 && end !== -1) return JSON.parse(text.slice(start, end+1))
+    throw e
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+const SLIDE_DEFAULTS = {
+  cover:   { tag:'Impulso Fundador', title:'Título\nprincipal', titleHighlight:'', subtitle:'Subtítulo del carrusel.' },
+  stat:    { title:'El número:', titleHighlight:'', statNumber:'00', statLabel:'descripción', bodyText:'' },
+  list:    { title:'Los puntos:', titleHighlight:'', numbered:true, bullets:['Punto 1','Punto 2','Punto 3'] },
+  content: { title:'El punto:', titleHighlight:'', bodyText:'Descripción directa.\nSin rodeos.' },
+  quote:   { quote:'"La frase va acá."', quoteHighlight:'', author:'— @impulsofundador' },
+  cta:     { title:'¿Útil?', titleHighlight:'', bodyText:'Guardalo.', ctaButton:'Seguime para más →', handle:'@impulsofundador' },
+}
+const TYPE_LABELS = { cover:'Portada', stat:'Estadística', list:'Lista', content:'Contenido', quote:'Quote', cta:'CTA' }
+
+let S = loadStateFromStorage() || {
+  pillars: [],        // { id, name, description, topics: [] }
+                      // topic: { id, pillarId, pillarName, title, status:'pending'|'approved'|'rejected', videoScript:{...} }
+  desarrollo: {
+    items: [],        // { id, topicId, topicTitle, pillarName, type:'carousel'|'video', status:'pending'|'approved'|'rejected', slides:[], videoScript:{} }
+    selectedId: null,
+    carouselState: { selectedSlideId: null }
+  },
+  chat: { messages:[] }
+}
+let currentTopicId = null
+let apiKey = localStorage.getItem('if_apikey') || ''
+
+function saveState() { try { localStorage.setItem('if_state', JSON.stringify(S)) } catch(e){} }
+function loadStateFromStorage() { try { const d = localStorage.getItem('if_state'); return d ? JSON.parse(d) : null } catch(e){ return null } }
+
+/* ══════════════════════════════════════════════════════════════
+   API
+══════════════════════════════════════════════════════════════ */
+async function callClaude(messages, system='') {
+  if (!apiKey) { openApiKey(); throw new Error('No API key') }
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, system, messages })
+  })
+  if (!r.ok) { const e = await r.json().catch(()=>{}); throw new Error(e?.error?.message || `HTTP ${r.status}`) }
+  const d = await r.json()
+  return d.content[0].text
+}
+
+async function generatePillars(userInput) {
+  const system = `Sos un estratega de contenido para "Impulso Fundador", marca de emprendimiento e IA en Argentina.
+Audiencia: emprendedores latinoamericanos. Tono: directo, sin rodeos, confrontacional.
+IMPORTANTE: Respondé ÚNICAMENTE con JSON válido. Sin texto extra. Sin markdown.`
+
+  const prompt = `El usuario tiene estas ideas de contenido para el mes:
+"${userInput}"
+
+Generá 5 pilares de contenido con 5 temas cada uno.
+Para cada tema incluí un guión de video.
+
+JSON exacto (sin texto extra):
+{
+  "pillars": [
+    {
+      "name": "Nombre corto del pilar (3-4 palabras)",
+      "description": "Una línea de descripción",
+      "topics": [
+        {
+          "title": "Título provocativo del tema",
+          "videoScript": {
+            "hook": "Primera oración gancho. Máx 15 palabras.",
+            "problem": "El dolor que resuelve. 1-2 oraciones.",
+            "valueContent": ["Punto de valor 1", "Punto de valor 2", "Punto de valor 3"],
+            "cta": "Llamada a la acción directa. Máx 10 palabras.",
+            "format": "Formato del video (ej: 3 errores que todos cometen)"
+          }
+        }
+      ]
+    }
+  ]
+}`
+
+  const text = await callClaude([{role:'user', content:prompt}], system)
+  return extractJSON(text)
+}
+
+async function generateCarousel(topic, pillarName) {
+  const system = `Generás carruseles de Instagram para Impulso Fundador. Tono directo, dark design, impacto visual.
+RESPONDÉ ÚNICAMENTE CON JSON VÁLIDO. Sin texto extra.`
+
+  const prompt = `Pilar: "${pillarName}"
+Tema: "${topic.title}"
+Hook del video: "${topic.videoScript?.hook || ''}"
+
+Generá 6 slides para un carrusel de Instagram.
+
+JSON:
+{
+  "slides": [
+    { "type": "cover", "tag": "Impulso Fundador", "title": "Título\nimpactante", "titleHighlight": "palabra roja", "subtitle": "subtítulo" },
+    { "type": "content", "title": "Punto clave", "titleHighlight": "palabra roja", "bodyText": "Desarrollo del punto.\n\nSegundo párrafo." },
+    { "type": "stat", "title": "El dato:", "titleHighlight": "", "statNumber": "X%", "statLabel": "descripción", "bodyText": "Contexto del dato." },
+    { "type": "list", "title": "Los pasos:", "titleHighlight": "pasos:", "numbered": true, "bullets": ["Paso 1", "Paso 2", "Paso 3"] },
+    { "type": "quote", "quote": "Frase\\nde impacto.", "quoteHighlight": "impacto", "author": "— @impulsofundador" },
+    { "type": "cta", "title": "¿Útil?", "titleHighlight": "", "bodyText": "Guardalo.", "ctaButton": "Seguime para más →", "handle": "@impulsofundador" }
+  ]
+}`
+
+  const text = await callClaude([{role:'user', content:prompt}], system)
+  const parsed = extractJSON(text)
+  return (parsed.slides || []).map(s => ({id:genId(), ...s}))
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════════════ */
+function setSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
+  document.getElementById(`section-${name}`).classList.add('active')
+  document.getElementById(`tab-${name}`)?.classList.add('active')
+  if (name === 'desarrollo') renderDesarrolloFull()
+}
+
+/* ══════════════════════════════════════════════════════════════
+   API KEY
+══════════════════════════════════════════════════════════════ */
+function openApiKey() {
+  document.getElementById('modal-apikey').classList.add('open')
+  document.getElementById('apikey-input').value = apiKey
+}
+function closeApiKey(e) {
+  if (!e || e.target === document.getElementById('modal-apikey'))
+    document.getElementById('modal-apikey').classList.remove('open')
+}
+function saveApiKey() {
+  apiKey = document.getElementById('apikey-input').value.trim()
+  localStorage.setItem('if_apikey', apiKey)
+  document.getElementById('modal-apikey').classList.remove('open')
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CHAT
+══════════════════════════════════════════════════════════════ */
+function initChat() {
+  if (S.chat.messages.length === 0) {
+    addMsg('assistant', '¡Hola Joaco! ¿Qué contenidos tenés pensados para hoy? Contame tus ideas y armo los pilares del mes. 🚀')
+  } else {
+    renderChatMessages()
+  }
+}
+
+function addMsg(role, text, save=true) {
+  const msg = { role, text, time: now() }
+  S.chat.messages.push(msg)
+  if (save) saveState()
+  appendMsgDOM(msg)
+  const msgs = document.getElementById('chat-messages')
+  msgs.scrollTop = msgs.scrollHeight
+}
+
+function appendMsgDOM(msg) {
+  const el = document.createElement('div')
+  el.className = `msg ${msg.role}`
+  el.innerHTML = `<div class="msg-bubble">${msg.text.replace(/\n/g,'<br>')}</div><div class="msg-time">${msg.time}</div>`
+  document.getElementById('chat-messages').appendChild(el)
+}
+
+function renderChatMessages() {
+  const el = document.getElementById('chat-messages')
+  el.innerHTML = ''
+  S.chat.messages.forEach(m => appendMsgDOM(m))
+  el.scrollTop = el.scrollHeight
+}
+
+function showTyping() {
+  const el = document.createElement('div')
+  el.id = 'typing-indicator'
+  el.className = 'msg assistant'
+  el.innerHTML = `<div class="msg-bubble typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`
+  document.getElementById('chat-messages').appendChild(el)
+  document.getElementById('chat-messages').scrollTop = 99999
+}
+function hideTyping() { document.getElementById('typing-indicator')?.remove() }
+
+function clearChat() {
+  S.chat.messages = []
+  document.getElementById('chat-messages').innerHTML = ''
+  saveState()
+  addMsg('assistant', '¡Hola Joaco! ¿Qué contenidos tenés pensados para hoy? Contame tus ideas y armo los pilares del mes. 🚀')
+}
+
+async function handleGenerate() {
+  const input = document.getElementById('chat-input').value.trim()
+  if (!input) return
+  if (!apiKey) { openApiKey(); return }
+
+  addMsg('user', input)
+  document.getElementById('chat-input').value = ''
+  document.getElementById('btn-generate').disabled = true
+
+  showTyping()
+  try {
+    const data = await generatePillars(input)
+    hideTyping()
+
+    if (!data.pillars?.length) throw new Error('JSON inválido')
+
+    S.pillars = data.pillars.map((p, pi) => ({
+      id: genId(),
+      name: p.name,
+      description: p.description,
+      topics: (p.topics || []).map(t => ({
+        id: genId(),
+        pillarId: null, // filled below
+        pillarName: p.name,
+        title: t.title,
+        status: 'pending',
+        videoScript: t.videoScript || {}
+      }))
+    }))
+    S.pillars.forEach(p => p.topics.forEach(t => t.pillarId = p.id))
+    saveState()
+
+    addMsg('assistant', `Listo. Generé ${S.pillars.length} pilares con ${S.pillars.reduce((a,p)=>a+p.topics.length,0)} temas en total.\n\nRevisá cada tarjeta, editá lo que quieras y aprobá los que te sirvan. Cuando estés listo, enviálos a Desarrollo.`)
+    renderPillars()
+  } catch(err) {
+    hideTyping()
+    addMsg('assistant', `Hubo un error generando el contenido: ${err.message}\n\nFijate que la API Key sea correcta e intentá de nuevo.`)
+  } finally {
+    document.getElementById('btn-generate').disabled = false
+  }
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate() }
+})
+
+/* ══════════════════════════════════════════════════════════════
+   PILLARS
+══════════════════════════════════════════════════════════════ */
+function renderPillars() {
+  const grid = document.getElementById('pillars-grid')
+  const empty = document.getElementById('pillars-empty')
+
+  if (!S.pillars.length) {
+    grid.style.display = 'none'; empty.style.display = 'flex'
+    document.getElementById('pillars-actions').style.display = 'none'
+    return
+  }
+  grid.style.display = 'grid'; empty.style.display = 'none'
+  document.getElementById('pillars-actions').style.display = 'flex'
+
+  grid.innerHTML = S.pillars.map((p, pi) => `
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <div class="pillar-num">PILAR ${String(pi+1).padStart(2,'0')}</div>
+        <div class="pillar-name">${esc(p.name)}</div>
+        ${p.description ? `<div class="pillar-desc">${esc(p.description)}</div>` : ''}
+      </div>
+      <div class="pillar-topics">
+        ${p.topics.map(t => `
+          <div class="topic-row" onclick="openTopicModal('${t.id}')">
+            <div class="topic-status ${statusClass(t.status)}">${statusIcon(t.status)}</div>
+            <div class="topic-title">${esc(t.title)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="pillar-footer">
+        <button class="btn btn-sm" style="flex:1; justify-content:center; font-size:10px" onclick="approvePillar('${p.id}', event)">✓ Aprobar todos</button>
+      </div>
+    </div>
+  `).join('')
+
+  // Update send button
+  const approved = S.pillars.flatMap(p => p.topics).filter(t => t.status === 'approved').length
+  document.getElementById('btn-send').textContent = `↗ Enviar a Desarrollo${approved ? ` (${approved})` : ''}`
+}
+
+function statusClass(s) { return s === 'approved' ? 'status-approved' : s === 'rejected' ? 'status-rejected' : 'status-pending' }
+function statusIcon(s)  { return s === 'approved' ? '✓' : s === 'rejected' ? '✗' : '' }
+
+function approvePillar(pillarId, e) {
+  e.stopPropagation()
+  const p = S.pillars.find(p => p.id === pillarId)
+  if (p) { p.topics.forEach(t => t.status = 'approved'); saveState(); renderPillars() }
+}
+
+function approveAll() {
+  S.pillars.flatMap(p => p.topics).forEach(t => t.status = 'approved')
+  saveState(); renderPillars()
+}
+
+function sendToDesarrollo() {
+  const approved = S.pillars.flatMap(p => p.topics).filter(t => t.status === 'approved')
+  if (!approved.length) { alert('Aprobá al menos un tema primero.'); return }
+
+  // Add to desarrollo only new items (avoid duplicates)
+  const existingTopicIds = new Set(S.desarrollo.items.map(i => i.topicId + i.type))
+  approved.forEach(t => {
+    if (!existingTopicIds.has(t.id + 'carousel')) {
+      S.desarrollo.items.push({ id:genId(), topicId:t.id, topicTitle:t.title, pillarName:t.pillarName, type:'carousel', status:'pending', slides:[], videoScript:t.videoScript })
+    }
+    if (!existingTopicIds.has(t.id + 'video')) {
+      S.desarrollo.items.push({ id:genId(), topicId:t.id, topicTitle:t.title, pillarName:t.pillarName, type:'video', status:'pending', slides:[], videoScript:t.videoScript })
+    }
+  })
+  saveState()
+  updateDesarrolloBadge()
+  addMsg('assistant', `Enviados ${approved.length} temas a Desarrollo. Encontrás los carruseles y videos en la sección 🛠 Desarrollo.`)
+  setSection('desarrollo')
+}
+
+function updateDesarrolloBadge() {
+  const badge = document.getElementById('badge-desarrollo')
+  const count = S.desarrollo.items.length
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline' }
+  else badge.style.display = 'none'
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOPIC MODAL
+══════════════════════════════════════════════════════════════ */
+function openTopicModal(topicId) {
+  currentTopicId = topicId
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === topicId)
+  if (!t) return
+  document.getElementById('modal-pillar-tag').textContent = t.pillarName || ''
+  document.getElementById('modal-topic-title').textContent = t.title
+  renderModalBody(t)
+  document.getElementById('modal-topic').classList.add('open')
+}
+
+function renderModalBody(t) {
+  const vs = t.videoScript || {}
+  document.getElementById('modal-body').innerHTML = `
+    <div class="script-section">
+      <div class="script-label hook"><span class="icon">🎣</span> HOOK</div>
+      <textarea class="script-field" rows="2" data-vs="hook" oninput="saveVSField(this)">${esc(vs.hook)}</textarea>
+    </div>
+    <div class="script-section">
+      <div class="script-label problem"><span class="icon">😤</span> PROBLEMA</div>
+      <textarea class="script-field" rows="2" data-vs="problem" oninput="saveVSField(this)">${esc(vs.problem)}</textarea>
+    </div>
+    <div class="script-section">
+      <div class="script-label value"><span class="icon">💎</span> CONTENIDO DE VALOR</div>
+      <div class="value-items">
+        ${(vs.valueContent||['','','']).map((v,i) => `
+          <div class="value-item-row">
+            <input type="text" value="${esc(v)}" data-vs="valueContent" data-idx="${i}" oninput="saveVSValue(this)" placeholder="Punto ${i+1}" />
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="script-section">
+      <div class="script-label cta"><span class="icon">📢</span> CTA</div>
+      <textarea class="script-field" rows="2" data-vs="cta" oninput="saveVSField(this)">${esc(vs.cta)}</textarea>
+    </div>
+    <div class="script-section">
+      <div class="script-label format"><span class="icon">🎬</span> FORMATO</div>
+      <input type="text" class="script-field" style="resize:none" data-vs="format" oninput="saveVSField(this)" value="${esc(vs.format)}" />
+    </div>
+  `
+}
+
+function saveVSField(el) {
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === currentTopicId)
+  if (!t) return
+  if (!t.videoScript) t.videoScript = {}
+  t.videoScript[el.dataset.vs] = el.value
+  saveState()
+}
+
+function saveVSValue(el) {
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === currentTopicId)
+  if (!t) return
+  if (!t.videoScript) t.videoScript = {}
+  if (!Array.isArray(t.videoScript.valueContent)) t.videoScript.valueContent = ['','','']
+  t.videoScript.valueContent[parseInt(el.dataset.idx)] = el.value
+  saveState()
+}
+
+function closeTopicModal(e) {
+  if (!e || e.target === document.getElementById('modal-topic'))
+    document.getElementById('modal-topic').classList.remove('open')
+}
+
+function approveTopic(topicId) {
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === topicId)
+  if (t) { t.status = 'approved'; saveState(); renderPillars() }
+  closeTopicModal()
+}
+
+function rejectTopic(topicId) {
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === topicId)
+  if (t) { t.status = 'rejected'; saveState(); renderPillars() }
+  closeTopicModal()
+}
+
+async function regenerateTopic(topicId) {
+  const t = S.pillars.flatMap(p => p.topics).find(t => t.id === topicId)
+  if (!t) return
+  const btn = document.querySelector('.modal-footer .btn:nth-child(2)')
+  if (btn) btn.innerHTML = '<span class="spin">↻</span> Regenerando...'
+
+  try {
+    const system = `Sos estratega de contenido para Impulso Fundador. Tono directo, sin rodeos. Solo JSON válido.`
+    const prompt = `Reescribí el guión de video para el tema: "${t.title}" (Pilar: "${t.pillarName}")
+Dame un ángulo diferente, más provocativo.
+JSON:
+{ "hook": "...", "problem": "...", "valueContent": ["...","...","..."], "cta": "...", "format": "..." }`
+    const text = await callClaude([{role:'user', content:prompt}], system)
+    const vs = extractJSON(text)
+    t.videoScript = vs
+    saveState()
+    renderModalBody(t)
+  } catch(err) {
+    alert('Error regenerando: ' + err.message)
+  } finally {
+    if (btn) btn.innerHTML = '↺ Regenerar'
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DESARROLLO — DASHBOARD
+══════════════════════════════════════════════════════════════ */
+function renderDesarrolloFull() {
+  renderDashboard()
+  const sel = S.desarrollo.selectedId ? S.desarrollo.items.find(i => i.id === S.desarrollo.selectedId) : null
+  if (sel) selectDashItem(sel.id)
+  else showDashEmpty()
+}
+
+function renderDashboard() {
+  const list = document.getElementById('dash-list')
+  const carousels = S.desarrollo.items.filter(i => i.type === 'carousel')
+  const videos = S.desarrollo.items.filter(i => i.type === 'video')
+
+  list.innerHTML = `
+    ${renderDashGroup('🎠 Carruseles', carousels)}
+    ${renderDashGroup('🎬 Videos', videos)}
+    ${!S.desarrollo.items.length ? `<div style="padding:24px 16px; text-align:center; color:var(--muted); font-size:12px">Sin contenidos aún.<br>Aprobá temas en la sección Idea.</div>` : ''}
+  `
+}
+
+function renderDashGroup(label, items) {
+  if (!items.length) return ''
+  return `
+    <div class="dash-group">
+      <div class="dash-group-label">${label} <span class="dash-count">${items.length}</span></div>
+      ${items.map(item => `
+        <div class="dash-item ${item.id === S.desarrollo.selectedId ? 'active' : ''}" onclick="selectDashItem('${item.id}')">
+          <div class="item-status-dot dot-${item.status}"></div>
+          <div class="dash-item-title">${esc(item.topicTitle)}</div>
+          <div class="dash-item-actions">
+            <button class="dash-action-btn dab-approve" title="Aprobar" onclick="dashApprove('${item.id}',event)">✓</button>
+            <button class="dash-action-btn dab-reject" title="Rechazar" onclick="dashReject('${item.id}',event)">✗</button>
+            <button class="dash-action-btn dab-regen" title="Regenerar" onclick="dashRegen('${item.id}',event)">↺</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `
+}
+
+function showDashEmpty() {
+  document.getElementById('dash-main-empty').style.display = 'flex'
+  document.getElementById('carousel-editor-wrap').style.display = 'none'
+  document.getElementById('video-viewer').style.display = 'none'
+}
+
+async function selectDashItem(id) {
+  S.desarrollo.selectedId = id
+  const item = S.desarrollo.items.find(i => i.id === id)
+  renderDashboard()
+  if (!item) { showDashEmpty(); return }
+
+  document.getElementById('dash-main-empty').style.display = 'none'
+
+  if (item.type === 'carousel') {
+    document.getElementById('video-viewer').style.display = 'none'
+    document.getElementById('carousel-editor-wrap').style.display = 'flex'
+
+    // Auto-generate slides if empty
+    if (!item.slides?.length) {
+      await generateSlidesForItem(item)
+    } else {
+      if (!S.desarrollo.carouselState.selectedSlideId && item.slides.length)
+        S.desarrollo.carouselState.selectedSlideId = item.slides[0].id
+      renderCarouselEditor(item)
+    }
+  } else {
+    // Video
+    document.getElementById('carousel-editor-wrap').style.display = 'none'
+    document.getElementById('video-viewer').style.display = 'block'
+    renderVideoViewer(item)
+  }
+  saveState()
+}
+
+async function generateSlidesForItem(item) {
+  const el = document.getElementById('ce-preview-inner')
+  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:20px;color:#333">
+    <div class="spin" style="font-size:40px">✦</div>
+    <div style="font-family:var(--fh);font-size:60px;font-weight:700;color:#222">Generando carrusel...</div>
+  </div>`
+  el.style.cssText = 'width:1080px;height:1350px;position:absolute;top:0;left:0;transform:scale(0.45);transform-origin:top left;padding:80px;display:flex;flex-direction:column;background:#0a0a0a'
+
+  const topic = S.pillars.flatMap(p => p.topics).find(t => t.id === item.topicId) ||
+                { title: item.topicTitle, pillarName: item.pillarName, videoScript: item.videoScript }
+
+  try {
+    const slides = await generateCarousel(topic, item.pillarName)
+    item.slides = slides
+    S.desarrollo.carouselState.selectedSlideId = slides[0]?.id || null
+    saveState()
+    renderCarouselEditor(item)
+  } catch(err) {
+    el.innerHTML = `<div style="padding:80px;color:#e42c2b;font-size:40px">Error: ${esc(err.message)}</div>`
+  }
+}
+
+function dashApprove(id, e) {
+  e.stopPropagation()
+  const item = S.desarrollo.items.find(i => i.id === id)
+  if (item) { item.status = 'approved'; saveState(); renderDashboard() }
+}
+
+function dashReject(id, e) {
+  e.stopPropagation()
+  const item = S.desarrollo.items.find(i => i.id === id)
+  if (item) { item.status = 'rejected'; saveState(); renderDashboard() }
+}
+
+async function dashRegen(id, e) {
+  e.stopPropagation()
+  const item = S.desarrollo.items.find(i => i.id === id)
+  if (!item || item.type !== 'carousel') return
+  item.slides = []
+  if (S.desarrollo.selectedId === id) {
+    await generateSlidesForItem(item)
+  }
+  saveState(); renderDashboard()
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CAROUSEL EDITOR (inside Desarrollo)
+══════════════════════════════════════════════════════════════ */
+function getActiveItem() {
+  return S.desarrollo.items.find(i => i.id === S.desarrollo.selectedId)
+}
+
+function renderCarouselEditor(item) {
+  if (!item) return
+  const selId = S.desarrollo.carouselState.selectedSlideId
+  if (!selId && item.slides.length) S.desarrollo.carouselState.selectedSlideId = item.slides[0].id
+
+  renderSlideThumbs(item)
+  renderCEPreview(item)
+  renderCEEditPanel(item)
+}
+
+function renderSlideThumbs(item) {
+  const list = document.getElementById('ce-slides-list')
+  const header = list.querySelector('.ce-slide-header')
+  list.innerHTML = ''
+  list.appendChild(header)
+
+  const selId = S.desarrollo.carouselState.selectedSlideId
+  item.slides.forEach((slide, i) => {
+    const div = document.createElement('div')
+    div.className = `thumb-item ${slide.id === selId ? 'active' : ''}`
+    div.innerHTML = `
+      <div class="thumb-frame">
+        <div class="thumb-inner slide-inner">${slideHTML(slide, i)}</div>
+      </div>
+      <div class="thumb-label">${String(i+1).padStart(2,'0')} · ${TYPE_LABELS[slide.type]}</div>
+      <div class="thumb-controls">
+        <button class="thumb-btn" onclick="ceMove('${slide.id}',-1)" title="Subir">↑</button>
+        <button class="thumb-btn" onclick="ceMove('${slide.id}',1)" title="Bajar">↓</button>
+        <button class="thumb-btn" onclick="ceDupe('${slide.id}')" title="Duplicar">⧉</button>
+        <button class="thumb-btn danger" onclick="ceRemove('${slide.id}')" title="Eliminar">×</button>
+      </div>
+    `
+    div.addEventListener('click', () => {
+      S.desarrollo.carouselState.selectedSlideId = slide.id
+      renderCarouselEditor(item)
+    })
+    list.appendChild(div)
+  })
+
+  const addBtn = document.createElement('button')
+  addBtn.className = 'btn btn-sm'; addBtn.style.cssText = 'width:100%;justify-content:center;margin-top:6px'
+  addBtn.textContent = '+ Slide'; addBtn.onclick = () => openTypePicker()
+  list.appendChild(addBtn)
+
+  // Export button
+  const expBtn = document.createElement('button')
+  expBtn.className = 'btn btn-sm btn-primary'; expBtn.style.cssText = 'width:100%;justify-content:center;margin-top:4px'
+  expBtn.textContent = '↓ Exportar'; expBtn.onclick = () => exportCarousel(item)
+  list.appendChild(expBtn)
+}
+
+function renderCEPreview(item) {
+  const selId = S.desarrollo.carouselState.selectedSlideId
+  const slide = item.slides.find(s => s.id === selId)
+  const idx = item.slides.findIndex(s => s.id === selId)
+  const el = document.getElementById('ce-preview-inner')
+  if (slide) {
+    el.innerHTML = slideHTML(slide, idx)
+    el.style.cssText = 'width:1080px;height:1350px;position:absolute;top:0;left:0;transform:scale(0.45);transform-origin:top left;padding:80px;display:flex;flex-direction:column;background:#0a0a0a'
+  }
+}
+
+function renderCEEditPanel(item) {
+  const selId = S.desarrollo.carouselState.selectedSlideId
+  const slide = item.slides.find(s => s.id === selId)
+  document.getElementById('ce-edit').innerHTML = editPanelHTML(slide)
+}
+
+/* ── Slide mutations ── */
+function addSlide(type) {
+  const item = getActiveItem()
+  if (!item) return
+  const slide = { id:genId(), type, ...SLIDE_DEFAULTS[type] }
+  const selId = S.desarrollo.carouselState.selectedSlideId
+  const idx = item.slides.findIndex(s => s.id === selId)
+  item.slides.splice(idx + 1, 0, slide)
+  S.desarrollo.carouselState.selectedSlideId = slide.id
+  saveState(); renderCarouselEditor(item)
+  closeTypePicker()
+}
+
+function ceRemove(slideId) {
+  const item = getActiveItem()
+  if (!item || item.slides.length <= 1) return
+  const idx = item.slides.findIndex(s => s.id === slideId)
+  item.slides.splice(idx, 1)
+  if (S.desarrollo.carouselState.selectedSlideId === slideId)
+    S.desarrollo.carouselState.selectedSlideId = item.slides[Math.min(idx, item.slides.length-1)]?.id
+  saveState(); renderCarouselEditor(item)
+}
+
+function ceMove(slideId, dir) {
+  const item = getActiveItem()
+  if (!item) return
+  const idx = item.slides.findIndex(s => s.id === slideId)
+  const ni = idx + dir
+  if (ni < 0 || ni >= item.slides.length) return
+  ;[item.slides[idx], item.slides[ni]] = [item.slides[ni], item.slides[idx]]
+  saveState(); renderCarouselEditor(item)
+}
+
+function ceDupe(slideId) {
+  const item = getActiveItem()
+  if (!item) return
+  const idx = item.slides.findIndex(s => s.id === slideId)
+  const copy = { ...JSON.parse(JSON.stringify(item.slides[idx])), id:genId() }
+  item.slides.splice(idx + 1, 0, copy)
+  S.desarrollo.carouselState.selectedSlideId = copy.id
+  saveState(); renderCarouselEditor(item)
+}
+
+function onField(el) {
+  const item = getActiveItem()
+  if (!item) return
+  const slide = item.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide) return
+  slide[el.dataset.field] = el.value
+  saveState(); renderCEPreview(item); renderSlideThumbs(item)
+  if (el.dataset.field === 'titleHighlight' || el.dataset.field === 'quoteHighlight') {
+    const f = el.dataset.field; renderCEEditPanel(item)
+    const inp = document.querySelector(`[data-field="${f}"]`)
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length) }
+  }
+}
+
+function onTypeChange(newType) {
+  const item = getActiveItem()
+  if (!item) return
+  const slide = item.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide) return
+  Object.assign(slide, { type: newType, ...SLIDE_DEFAULTS[newType] })
+  saveState(); renderCarouselEditor(item)
+}
+
+function onToggle(field, val) {
+  const item = getActiveItem()
+  const slide = item?.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide) return
+  slide[field] = val; saveState(); renderCEPreview(item); renderSlideThumbs(item)
+}
+
+function onBullet(el, index) {
+  const item = getActiveItem()
+  const slide = item?.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide) return
+  slide.bullets[index] = el.value; saveState(); renderCEPreview(item); renderSlideThumbs(item)
+}
+
+function addBullet() {
+  const item = getActiveItem()
+  const slide = item?.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide) return
+  slide.bullets = [...(slide.bullets||[]), 'Nuevo punto']
+  saveState(); renderCEPreview(item); renderSlideThumbs(item); renderCEEditPanel(item)
+  const inputs = document.querySelectorAll('[data-bullet]')
+  if (inputs.length) inputs[inputs.length-1].focus()
+}
+
+function removeBullet(index) {
+  const item = getActiveItem()
+  const slide = item?.slides.find(s => s.id === S.desarrollo.carouselState.selectedSlideId)
+  if (!slide || !slide.bullets || slide.bullets.length <= 1) return
+  slide.bullets.splice(index, 1)
+  saveState(); renderCEPreview(item); renderSlideThumbs(item); renderCEEditPanel(item)
+}
+
+function openTypePicker() { document.getElementById('type-picker').classList.add('open') }
+function closeTypePicker(e) {
+  if (!e || e.target === document.getElementById('type-picker'))
+    document.getElementById('type-picker').classList.remove('open')
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VIDEO SCRIPT VIEWER
+══════════════════════════════════════════════════════════════ */
+function renderVideoViewer(item) {
+  const vs = item.videoScript || {}
+  document.getElementById('video-viewer').innerHTML = `
+    <div class="video-viewer-header">
+      <div class="video-viewer-pillar">${esc(item.pillarName)}</div>
+      <div class="video-viewer-title">${esc(item.topicTitle)}</div>
+    </div>
+    <div class="vs-grid">
+      <div class="vs-card">
+        <div class="vs-card-label l-hook">🎣 HOOK</div>
+        <textarea class="vs-card-field" rows="2" oninput="saveItemVS(this,'hook')" placeholder="Primera oración gancho...">${esc(vs.hook)}</textarea>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-label l-problem">😤 PROBLEMA</div>
+        <textarea class="vs-card-field" rows="2" oninput="saveItemVS(this,'problem')" placeholder="El dolor que resuelve...">${esc(vs.problem)}</textarea>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-label l-value">💎 CONTENIDO DE VALOR</div>
+        <div class="vs-value-list">
+          ${(vs.valueContent||['','','']).map((v,i) => `
+            <div class="vs-value-row">
+              <div class="vs-value-dot"></div>
+              <textarea rows="2" oninput="saveItemVSValue(this,${i})">${esc(v)}</textarea>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-label l-cta">📢 CTA</div>
+        <textarea class="vs-card-field" rows="2" oninput="saveItemVS(this,'cta')" placeholder="Llamada a la acción...">${esc(vs.cta)}</textarea>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-label l-format">🎬 FORMATO</div>
+        <input type="text" class="vs-card-field" style="resize:none" oninput="saveItemVS(this,'format')" value="${esc(vs.format)}" placeholder="Formato del video..." />
+      </div>
+    </div>
+    <div class="vs-actions">
+      <button class="btn btn-danger btn-sm" onclick="dashRejectCurrent()">✗ Rechazar</button>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="dashRegenCurrent()">↺ Regenerar</button>
+      <button class="btn btn-green btn-sm" onclick="dashApproveCurrent()">✓ Aprobar</button>
+    </div>
+  `
+}
+
+function saveItemVS(el, field) {
+  const item = getActiveItem()
+  if (!item) return
+  if (!item.videoScript) item.videoScript = {}
+  item.videoScript[field] = el.value; saveState()
+}
+
+function saveItemVSValue(el, idx) {
+  const item = getActiveItem()
+  if (!item) return
+  if (!item.videoScript) item.videoScript = {}
+  if (!Array.isArray(item.videoScript.valueContent)) item.videoScript.valueContent = ['','','']
+  item.videoScript.valueContent[idx] = el.value; saveState()
+}
+
+function dashApproveCurrent() { const item = getActiveItem(); if(item){item.status='approved';saveState();renderDashboard()} }
+function dashRejectCurrent()  { const item = getActiveItem(); if(item){item.status='rejected';saveState();renderDashboard()} }
+async function dashRegenCurrent() {
+  const item = getActiveItem()
+  if (!item || item.type !== 'video') return
+  const btn = document.querySelector('.vs-actions .btn:nth-child(2)')
+  if (btn) btn.innerHTML = '<span class="spin">↻</span>'
+  try {
+    const system = `Estratega de contenido para Impulso Fundador. Solo JSON válido.`
+    const prompt = `Reescribí el guión de video para: "${item.topicTitle}" (Pilar: "${item.pillarName}")
+Ángulo diferente, más directo y provocativo.
+JSON: { "hook":"...","problem":"...","valueContent":["...","...","..."],"cta":"...","format":"..." }`
+    const text = await callClaude([{role:'user', content:prompt}], system)
+    item.videoScript = extractJSON(text); saveState(); renderVideoViewer(item)
+  } catch(err) { alert('Error: ' + err.message) }
+  finally { if (btn) btn.innerHTML = '↺ Regenerar' }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SLIDE RENDERER
+══════════════════════════════════════════════════════════════ */
+function slideHTML(slide, index) {
+  const num = String(index + 1).padStart(2, '0')
+  const dots = `<div class="bg-dots"></div>`
+  const glow = p => `<div class="bg-glow" style="${p}"></div>`
+  const foot = `<div class="footer-line"></div>`
+  const top = `<div class="top-bar" style="margin-bottom:60px;"><div class="brand-tag">IF</div><div class="slide-num">${num}</div></div>`
+
+  switch(slide.type) {
+    case 'cover': return `
+      ${dots}${glow('top:-200px;right:-200px;')}
+      <div class="tag-line" style="margin-bottom:auto;">${esc(slide.tag||'Impulso Fundador')}</div>
+      <div class="title" style="font-size:118px;margin-bottom:44px;">${applyHL(slide.title,slide.titleHighlight)}</div>
+      <div class="body-text" style="font-size:36px;color:#666;margin-bottom:64px;">${esc(slide.subtitle)}</div>
+      <div style="width:80px;height:6px;background:#e42c2b;"></div>${foot}`
+
+    case 'stat': return `
+      ${dots}${top}
+      <div class="title" style="font-size:80px;margin-bottom:48px;">${applyHL(slide.title,slide.titleHighlight)}</div>
+      <div class="stat-block"><div class="stat-number">${esc(slide.statNumber)}</div><div class="stat-label">${esc(slide.statLabel)}</div></div>
+      <div class="body-text" style="font-size:34px;margin-top:48px;">${nl2br(slide.bodyText)}</div>${foot}`
+
+    case 'list': return `
+      ${dots}${top}
+      <div class="title" style="font-size:72px;margin-bottom:64px;">${applyHL(slide.title,slide.titleHighlight)}</div>
+      <ul class="bullet-list${slide.numbered?' numbered':''}">
+        ${(slide.bullets||[]).map((b,i)=>slide.numbered
+          ?`<li><span class="num">${String(i+1).padStart(2,'0')}</span><span>${esc(b)}</span></li>`
+          :`<li><span>${esc(b)}</span></li>`).join('')}
+      </ul>${foot}`
+
+    case 'content': return `
+      ${dots}${top}
+      <div class="title" style="font-size:76px;margin-bottom:40px;">${applyHL(slide.title,slide.titleHighlight)}</div>
+      <div class="body-text">${nl2br(slide.bodyText)}</div>${foot}`
+
+    case 'quote': return `
+      ${glow('bottom:-100px;left:-100px;')}${top}
+      <div class="quote-wrap"><div class="quote-text">${applyHL(slide.quote,slide.quoteHighlight,'em','em')}</div></div>
+      <div class="body-text" style="font-size:30px;color:#444;margin-top:48px;">${esc(slide.author)}</div>${foot}`
+
+    case 'cta': return `
+      ${dots}${glow('top:-100px;right:-100px;')}
+      <div class="tag-line" style="margin-bottom:60px;">Impulso Fundador</div>
+      <div class="title" style="font-size:96px;margin-bottom:48px;">${applyHL(slide.title,slide.titleHighlight)}</div>
+      <div class="body-text" style="font-size:36px;color:#777;margin-bottom:64px;">${nl2br(slide.bodyText)}</div>
+      <div class="cta-btn">${esc(slide.ctaButton)}</div>
+      <div style="font-family:'Inter',sans-serif;font-size:32px;color:#444;margin-top:28px;">${esc(slide.handle)}</div>${foot}`
+
+    default: return `<div style="padding:80px;color:#555;">?</div>`
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EDIT PANEL RENDERER (for carousel editor)
+══════════════════════════════════════════════════════════════ */
+function editPanelHTML(slide) {
+  if (!slide) return `<div style="padding:20px;color:var(--muted);font-size:12px">Seleccioná un slide</div>`
+
+  const f = (label, name, val, rows=1, hint='') => `
+    <div class="field">
+      <label>${label}${hint?` <span class="hint">${hint}</span>`:''}</label>
+      ${rows>1
+        ?`<textarea data-field="${name}" rows="${rows}" oninput="onField(this)">${esc(val)}</textarea>`
+        :`<input type="text" data-field="${name}" value="${esc(val)}" oninput="onField(this)" />`}
+    </div>`
+
+  const hlf = (name, val) => `
+    <div class="field">
+      <label>Texto rojo <span class="hint">frase exacta</span></label>
+      <input type="text" data-field="${name}" value="${esc(val)}" oninput="onField(this)" />
+      ${val?`<div class="hl-preview">${esc(val)}</div>`:''}
+    </div>`
+
+  const typeOpts = Object.entries(TYPE_LABELS).map(([v,l])=>`<option value="${v}" ${slide.type===v?'selected':''}>${l}</option>`).join('')
+  const header = `
+    <div class="ep-section-title">Editar slide</div>
+    <div class="field"><label>Tipo</label>
+      <select data-field="type" onchange="onTypeChange(this.value)">${typeOpts}</select>
+    </div>`
+
+  let fields = ''
+  switch(slide.type) {
+    case 'cover':
+      fields = `${f('Tag','tag',slide.tag)}${f('Título','title',slide.title,4,'↵ = nueva línea')}${hlf('titleHighlight',slide.titleHighlight)}${f('Subtítulo','subtitle',slide.subtitle)}`; break
+    case 'stat':
+      fields = `${f('Título','title',slide.title,3)}${hlf('titleHighlight',slide.titleHighlight)}${f('Número','statNumber',slide.statNumber)}${f('Descripción','statLabel',slide.statLabel)}${f('Texto apoyo','bodyText',slide.bodyText,2)}`; break
+    case 'list': {
+      const brows = (slide.bullets||[]).map((b,i)=>`
+        <div class="bullet-row">
+          ${slide.numbered?`<span class="bullet-num">${String(i+1).padStart(2,'0')}</span>`:''}
+          <input type="text" data-bullet="${i}" value="${esc(b)}" oninput="onBullet(this,${i})" />
+          <button class="btn-rm-bullet" onclick="removeBullet(${i})">×</button>
+        </div>`).join('')
+      fields = `${f('Título','title',slide.title,2)}${hlf('titleHighlight',slide.titleHighlight)}
+        <div class="field"><div class="toggle-row"><span class="toggle-label">Numerado</span>
+          <label class="toggle"><input type="checkbox" ${slide.numbered?'checked':''} onchange="onToggle('numbered',this.checked)" /><div class="toggle-track"></div></label>
+        </div></div>
+        <div class="field"><label>Bullets</label>
+          <div class="bullets-container">${brows}</div>
+          <button class="btn-add-bullet" onclick="addBullet()">+ Agregar punto</button>
+        </div>`; break
+    }
+    case 'content':
+      fields = `${f('Título','title',slide.title,2)}${hlf('titleHighlight',slide.titleHighlight)}${f('Cuerpo','bodyText',slide.bodyText,5,'↵ = párrafo')}`; break
+    case 'quote':
+      fields = `${f('Quote','quote',slide.quote,5,'↵ = nueva línea')}
+        <div class="field"><label>Texto rojo <span class="hint">frase exacta</span></label>
+          <input type="text" data-field="quoteHighlight" value="${esc(slide.quoteHighlight)}" oninput="onField(this)" />
+          ${slide.quoteHighlight?`<div class="hl-preview">${esc(slide.quoteHighlight)}</div>`:''}
+        </div>
+        ${f('Autor','author',slide.author)}`; break
+    case 'cta':
+      fields = `${f('Título','title',slide.title,3,'↵ = nueva línea')}${hlf('titleHighlight',slide.titleHighlight)}${f('Cuerpo','bodyText',slide.bodyText,2)}${f('Botón','ctaButton',slide.ctaButton)}${f('Handle','handle',slide.handle)}`; break
+  }
+  return header + fields
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════════════════════════ */
+function exportCarousel(item) {
+  const slidesMarkup = item.slides.map((slide,i) => `
+    <div>
+      <div class="slide"><div class="slide-inner">${slideHTML(slide,i)}</div></div>
+      <div class="slide-label">Slide ${String(i+1).padStart(2,'0')} — ${TYPE_LABELS[slide.type]}</div>
+    </div>`).join('')
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${esc(item.topicTitle)} — IF</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}:root{--red:#e42c2b;--black:#0a0a0a;--white:#f5f5f5;--gray:#1a1a1a;--font-title:'Space Grotesk',sans-serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace}
+body{background:#111;font-family:var(--font-body);color:var(--white);padding:40px 20px}h1{font-family:var(--font-title);font-size:13px;font-weight:500;color:#444;letter-spacing:.1em;text-transform:uppercase;margin-bottom:32px}
+.slides-grid{display:flex;flex-wrap:wrap;gap:24px}.slide{width:324px;height:405px;position:relative;overflow:hidden;flex-shrink:0;border:1px solid #222}
+.slide-inner{width:1080px;height:1350px;position:absolute;top:0;left:0;transform:scale(.3);transform-origin:top left;background:var(--black);padding:80px;display:flex;flex-direction:column}
+.slide-label{font-size:11px;color:#444;text-align:center;margin-top:8px}
+.bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,#1e1e1e 1px,transparent 1px);background-size:48px 48px;pointer-events:none;opacity:.6}
+.bg-glow{position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(228,44,43,.14) 0%,transparent 70%);pointer-events:none}
+.footer-line{position:absolute;bottom:0;left:0;right:0;height:6px;background:var(--red)}
+.brand-tag{font-family:var(--font-title);font-size:28px;font-weight:700;color:var(--red);letter-spacing:.04em;text-transform:uppercase}
+.slide-num{font-family:var(--font-mono);font-size:26px;color:#2e2e2e}.top-bar{display:flex;justify-content:space-between;align-items:flex-start}
+.tag-line{font-family:var(--font-mono);font-size:26px;letter-spacing:.12em;color:var(--red);text-transform:uppercase}
+.title{font-family:var(--font-title);font-weight:800;line-height:1.05;color:var(--white)}.red{color:var(--red)}
+.body-text{font-family:var(--font-body);font-size:40px;font-weight:400;color:#aaa;line-height:1.65}.body-text strong{color:var(--white);font-weight:600}
+.stat-block{background:var(--gray);border-left:8px solid var(--red);padding:52px 60px;border-radius:4px}
+.stat-number{font-family:var(--font-title);font-size:130px;font-weight:800;color:var(--red);line-height:1}
+.stat-label{font-family:var(--font-body);font-size:36px;color:#666;margin-top:10px}
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:44px}
+.bullet-list li{font-family:var(--font-body);font-size:40px;color:var(--white);display:flex;align-items:flex-start;gap:28px;line-height:1.45}
+.bullet-list:not(.numbered) li::before{content:'';display:block;min-width:14px;height:14px;background:var(--red);margin-top:14px;border-radius:2px;flex-shrink:0}
+.bullet-list li .num{font-family:var(--font-mono);font-size:34px;color:var(--red);min-width:60px;flex-shrink:0;margin-top:4px}
+.quote-wrap{border-top:4px solid var(--red);padding-top:60px;flex:1;display:flex;flex-direction:column;justify-content:center}
+.quote-text{font-family:var(--font-title);font-size:76px;font-weight:700;line-height:1.2;color:var(--white)}.quote-text em{color:var(--red);font-style:normal}
+.cta-btn{display:inline-flex;align-items:center;background:var(--red);color:var(--white);font-family:var(--font-title);font-size:42px;font-weight:700;padding:40px 68px;border-radius:4px;width:fit-content}
+</style></head><body>
+<h1>${esc(item.pillarName)} — ${esc(item.topicTitle)}</h1>
+<div class="slides-grid">${slidesMarkup}</div>
+</body></html>`
+
+  const blob = new Blob([html], {type:'text/html'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = item.topicTitle.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '.html'
+  a.click(); URL.revokeObjectURL(url)
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MISC
+══════════════════════════════════════════════════════════════ */
+function clearAll() {
+  if (!confirm('¿Reiniciar todo? Se perderán los datos no exportados.')) return
+  localStorage.removeItem('if_state')
+  S = { pillars:[], desarrollo:{items:[],selectedId:null,carouselState:{selectedSlideId:null}}, chat:{messages:[]} }
+  location.reload()
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+;(function init() {
+  initChat()
+  renderPillars()
+  updateDesarrolloBadge()
+  if (!apiKey) {
+    // Show API key prompt after a short delay on first load
+    setTimeout(() => openApiKey(), 800)
+  }
+})()
+</script>
+</body>
+</html>
